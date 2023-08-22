@@ -10,7 +10,7 @@ fun main() {
         val word = Word(
             original = stringElem[0],
             translate =  stringElem[1],
-            correctAnswersCount = stringElem[2].toIntOrNull() ?: 0
+            correctAnswersCount = stringElem.getOrNull(2)?.toIntOrNull() ?: 0
         )
         dictionary.add(word)
     }
