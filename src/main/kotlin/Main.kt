@@ -31,14 +31,41 @@ data class Word(
 fun startMenu(dictionary: MutableList<Word>, learningThreshold: Int) {
     while (true) {
         println("\nМеню: 1 – Учить слова, 2 – Статистика, 0 – Выход")
-        println(
-            when (readln().toIntOrNull()) {
-                1 -> "учим слова"
-                2 -> getStatistics(dictionary, learningThreshold)
+        when (readln().toIntOrNull()) {
+                1 -> startLearningWords(dictionary, learningThreshold)
+                2 -> println(getStatistics(dictionary, learningThreshold))
                 0 -> break
-                else -> "Ввод данных некорректный!"
+                else -> println("Ввод данных некорректный!")
             }
-        )
+    }
+}
+
+fun startLearningWords(dictionary: MutableList<Word>, learningThreshold: Int) {
+    while (true) {
+        val unlearnedWords = dictionary.filter { it.correctAnswersCount < learningThreshold }.toMutableList()
+        if (unlearnedWords.isEmpty()) {
+            println("Вы выучили все слова")
+            break
+        } else {
+            val shuffledWords = unlearnedWords.shuffled().take(4)
+            val rightWord = shuffledWords.random()
+            println("\nСлово ${rightWord.original} переводится как:")
+            shuffledWords.forEachIndexed { index, word -> println("${index + 1} - ${word.translate}") }
+
+            println("\nВаш вариант ответа:")
+            var answer = readln()
+            while (answer !in listOf("1", "2", "3", "4")) {
+                println("Введён некорректный ответ! \nВведите цифру от 1 до 4:")
+                answer = readln()
+            }
+            if (answer.toInt() == shuffledWords.indexOf(rightWord) + 1) {
+                println("Верно!")
+                dictionary.find { it == rightWord }?.correctAnswersCount?.inc()
+            } else println("Ответ неверный. Правильный перевод - \"${rightWord.translate}\"")
+
+            println("\nВаши дальнейшие действия: \n1 - продолжить изучение слов, 2 - вернуться в главное меню")
+            if (readln() == "2") break
+        }
     }
 }
 
