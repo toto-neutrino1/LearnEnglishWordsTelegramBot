@@ -1,5 +1,7 @@
 import java.io.File
 
+const val NUM_OF_ANSWER_OPTIONS = 4
+
 fun main() {
     val wordsFile = File("words.txt")
     val dictionary: MutableList<Word> = mutableListOf()
@@ -42,29 +44,26 @@ fun startMenu(dictionary: MutableList<Word>, learningThreshold: Int) {
 
 fun startLearningWords(dictionary: MutableList<Word>, learningThreshold: Int) {
     while (true) {
-        val unlearnedWords = dictionary.filter { it.correctAnswersCount < learningThreshold }.toMutableList()
+        val unlearnedWords = dictionary.filter { it.correctAnswersCount < learningThreshold }
         if (unlearnedWords.isEmpty()) {
             println("Вы выучили все слова")
             break
         } else {
-            val shuffledWords = unlearnedWords.shuffled().take(4)
+            val shuffledWords = unlearnedWords.shuffled().take(NUM_OF_ANSWER_OPTIONS)
             val rightWord = shuffledWords.random()
             println("\nСлово ${rightWord.original} переводится как:")
             shuffledWords.forEachIndexed { index, word -> println("${index + 1} - ${word.translate}") }
+            println("0 - выйти в главное меню")
 
             println("\nВаш вариант ответа:")
-            var answer = readln()
-            while (answer !in listOf("1", "2", "3", "4")) {
-                println("Введён некорректный ответ! \nВведите цифру от 1 до 4:")
-                answer = readln()
+            when (readln().toIntOrNull()) {
+                0 -> break
+                shuffledWords.indexOf(rightWord) + 1 -> {
+                    println("Верно!")
+                    dictionary.find { it == rightWord }?.correctAnswersCount?.inc()
+                }
+                else -> println("Ответ неверный. Правильный перевод - \"${rightWord.translate}\"")
             }
-            if (answer.toInt() == shuffledWords.indexOf(rightWord) + 1) {
-                println("Верно!")
-                dictionary.find { it == rightWord }?.correctAnswersCount?.inc()
-            } else println("Ответ неверный. Правильный перевод - \"${rightWord.translate}\"")
-
-            println("\nВаши дальнейшие действия: \n1 - продолжить изучение слов, 2 - вернуться в главное меню")
-            if (readln() == "2") break
         }
     }
 }
