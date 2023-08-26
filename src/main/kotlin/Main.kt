@@ -53,19 +53,26 @@ fun startLearningWords(dictionary: MutableList<Word>, learningThreshold: Int) {
             val rightWord = shuffledWords.random()
             println("\nСлово ${rightWord.original} переводится как:")
             shuffledWords.forEachIndexed { index, word -> println("${index + 1} - ${word.translate}") }
-            println("0 - выйти в главное меню")
+            println("0 - Меню")
 
             println("\nВаш вариант ответа:")
             when (readln().toIntOrNull()) {
                 0 -> break
                 shuffledWords.indexOf(rightWord) + 1 -> {
                     println("Верно!")
-                    dictionary.find { it == rightWord }?.correctAnswersCount?.inc()
+                    dictionary[dictionary.indexOf(rightWord)].correctAnswersCount++
+                    saveDictionary(dictionary)
                 }
                 else -> println("Ответ неверный. Правильный перевод - \"${rightWord.translate}\"")
             }
         }
     }
+}
+
+fun saveDictionary(dictionary: MutableList<Word>) {
+    val file = File("words.txt")
+    val newFileContent = dictionary.map { "${it.original}|${it.translate}|${it.correctAnswersCount}" }
+    file.writeText(newFileContent.joinToString(separator = "\n"))
 }
 
 fun getStatistics(dictionary: MutableList<Word>, learningThreshold: Int): String {

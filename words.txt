@@ -1,20 +1,20 @@
-hello|привет|1
-dog|собака|
+hello|привет|3
+dog|собака|1
 cat|кошка|3
 team|команда|2
-snowball|снегопад|
-aspect ratio|соотношение сторон|
+snowball|снегопад|0
+aspect ratio|соотношение сторон|0
 iron|железо|1
-flying|летающий|
+flying|летающий|0
 diffusion|диффузия|3
 research|исследование|1
-collection|коллекция|
-oil|масло|
-castle|замок|
-evening|вечер|
-wave|волна
-physical chemistry|физическая химия
-asparagus|спаржа
-argue|спорить
-cherry|вишня
-curve|кривая
+collection|коллекция|0
+oil|масло|0
+castle|замок|0
+evening|вечер|0
+wave|волна|0
+physical chemistry|физическая химия|0
+asparagus|спаржа|1
+argue|спорить|1
+cherry|вишня|0
+curve|кривая|1
