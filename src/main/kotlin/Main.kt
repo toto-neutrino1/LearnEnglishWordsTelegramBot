@@ -1,27 +1,26 @@
 import java.io.File
 
 const val NUM_OF_ANSWER_OPTIONS = 4
+const val LEARNING_THRESHOLD = 3
 
 fun main() {
     val wordsFile = File("words.txt")
-    val dictionary: MutableList<Word> = mutableListOf()
 
     val fileLines = wordsFile.readLines()
-    for (line in fileLines) {
-        val stringElem = line.split("|")
-        val word = Word(
+    val dictionary: List<Word> = List(fileLines.size) { indexOfFileLine ->
+        val stringElem = fileLines[indexOfFileLine].split("|")
+        Word(
             original = stringElem[0],
             translate =  stringElem[1],
             correctAnswersCount = stringElem.getOrNull(2)?.toIntOrNull() ?: 0
         )
-        dictionary.add(word)
     }
 
     for (word in dictionary) {
         println(word)
     }
 
-    startMenu(dictionary = dictionary, learningThreshold = 3)
+    startMenu(dictionary)
 }
 
 data class Word(
@@ -30,21 +29,21 @@ data class Word(
     var correctAnswersCount: Int = 0
 )
 
-fun startMenu(dictionary: MutableList<Word>, learningThreshold: Int) {
+fun startMenu(dictionary: List<Word>) {
     while (true) {
         println("\nМеню: 1 – Учить слова, 2 – Статистика, 0 – Выход")
         when (readln().toIntOrNull()) {
-                1 -> startLearningWords(dictionary, learningThreshold)
-                2 -> println(getStatistics(dictionary, learningThreshold))
+                1 -> startLearningWords(dictionary)
+                2 -> println(getStatistics(dictionary))
                 0 -> break
                 else -> println("Ввод данных некорректный!")
             }
     }
 }
 
-fun startLearningWords(dictionary: MutableList<Word>, learningThreshold: Int) {
+fun startLearningWords(dictionary: List<Word>) {
     while (true) {
-        val unlearnedWords = dictionary.filter { it.correctAnswersCount < learningThreshold }
+        val unlearnedWords = dictionary.filter { it.correctAnswersCount < LEARNING_THRESHOLD }
         if (unlearnedWords.isEmpty()) {
             println("Вы выучили все слова")
             break
@@ -60,7 +59,7 @@ fun startLearningWords(dictionary: MutableList<Word>, learningThreshold: Int) {
                 0 -> break
                 shuffledWords.indexOf(rightWord) + 1 -> {
                     println("Верно!")
-                    dictionary[dictionary.indexOf(rightWord)].correctAnswersCount++
+                    rightWord.correctAnswersCount++
                     saveDictionary(dictionary)
                 }
                 else -> println("Ответ неверный. Правильный перевод - \"${rightWord.translate}\"")
@@ -69,15 +68,15 @@ fun startLearningWords(dictionary: MutableList<Word>, learningThreshold: Int) {
     }
 }
 
-fun saveDictionary(dictionary: MutableList<Word>) {
+fun saveDictionary(dictionary: List<Word>) {
     val file = File("words.txt")
     val newFileContent = dictionary.map { "${it.original}|${it.translate}|${it.correctAnswersCount}" }
     file.writeText(newFileContent.joinToString(separator = "\n"))
 }
 
-fun getStatistics(dictionary: MutableList<Word>, learningThreshold: Int): String {
+fun getStatistics(dictionary: List<Word>): String {
     val numOfAllWords = dictionary.size
-    val numOfLearnedWords = dictionary.filter { it.correctAnswersCount >= learningThreshold }.size
+    val numOfLearnedWords = dictionary.filter { it.correctAnswersCount >= LEARNING_THRESHOLD }.size
     val learnedPercent = 100 * numOfLearnedWords / numOfAllWords
 
     return "Выучено $numOfLearnedWords из $numOfAllWords слов | $learnedPercent%"
