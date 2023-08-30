@@ -1,5 +1,22 @@
 import java.io.File
 
+data class Word(
+    val original: String,
+    val translate: String,
+    var correctAnswersCount: Int = 0
+)
+
+data class Statistics(
+    val numOfAllWords: Int,
+    val numOfLearnedWords: Int,
+    val learnedPercent: Int
+)
+
+data class Question(
+    val questionWords: List<Word>,
+    val rightAnswer: Word
+)
+
 class LearnWordsTrainer {
     private val dictionary = try {
         loadDictionary()
@@ -7,37 +24,41 @@ class LearnWordsTrainer {
         throw IllegalArgumentException("Некорректный файл")
     }
 
-    fun printStatistics() {
+    fun getStatistics(): Statistics {
         val numOfAllWords = dictionary.size
         val numOfLearnedWords = dictionary.filter { it.correctAnswersCount >= LEARNING_THRESHOLD }.size
         val learnedPercent = 100 * numOfLearnedWords / numOfAllWords
 
-        println("Выучено $numOfLearnedWords из $numOfAllWords слов | $learnedPercent%")
+        return Statistics(numOfAllWords, numOfLearnedWords, learnedPercent)
     }
 
-    fun startLearningWords() {
-        while (true) {
-            val unlearnedWords = dictionary.filter { it.correctAnswersCount < LEARNING_THRESHOLD }
+    fun getQuestion(): Question? {
+        val unlearnedWords = getUnlearnedWords()
 
-            if (unlearnedWords.isEmpty()) {
-                println("Вы выучили все слова")
-                break
-            } else {
-                val shuffledWords = getRandomUnlearnedWords(unlearnedWords)
+        if (unlearnedWords.isEmpty()) return null
 
-                val rightWord =
-                    if (unlearnedWords.size < NUM_OF_ANSWER_OPTIONS) unlearnedWords.random()
-                    else shuffledWords.random()
+        val questionWords = getRandomQuestionWords(unlearnedWords)
+        val rightWord =
+            if (unlearnedWords.size < NUM_OF_ANSWER_OPTIONS) unlearnedWords.random()
+            else questionWords.random()
 
-                printQuestion(shuffledWords, rightWord)
+        return Question(questionWords, rightWord)
+    }
 
-                val checkAnswerResult = getCheckAnswerResult(shuffledWords, rightWord)
-                if (checkAnswerResult.isEmpty()) break else println(checkAnswerResult)
+    fun checkAnswer(question: Question, userAnswer: String): Boolean {
+        with(question) {
+            if (userAnswer.toIntOrNull() == questionWords.indexOf(rightAnswer) + 1) {
+                rightAnswer.correctAnswersCount++
+                saveDictionary()
+                return true
             }
         }
+        return false
     }
 
-    private fun getRandomUnlearnedWords(unlearnedWords: List<Word>): List<Word> {
+    private fun getUnlearnedWords() = dictionary.filter { it.correctAnswersCount < LEARNING_THRESHOLD }
+
+    private fun getRandomQuestionWords(unlearnedWords: List<Word>): List<Word> {
             return if (unlearnedWords.size < NUM_OF_ANSWER_OPTIONS) {
                 val learnedWords = dictionary.filter { it.correctAnswersCount >= LEARNING_THRESHOLD }.shuffled()
                 (unlearnedWords + learnedWords.take(NUM_OF_ANSWER_OPTIONS - unlearnedWords.size)).shuffled()
@@ -45,25 +66,6 @@ class LearnWordsTrainer {
                 unlearnedWords.shuffled().take(NUM_OF_ANSWER_OPTIONS)
             }
         }
-
-    private fun printQuestion(shuffledWords: List<Word>, rightWord: Word) {
-        println("\nСлово ${rightWord.original} переводится как:")
-        shuffledWords.forEachIndexed { index, word -> println("${index + 1} - ${word.translate}") }
-        println("0 - Меню")
-    }
-
-    private fun getCheckAnswerResult(shuffledWords: List<Word>, rightWord: Word): String {
-        println("\nВаш вариант ответа:")
-        return when (readln().toIntOrNull()) {
-            0 -> ""
-            shuffledWords.indexOf(rightWord) + 1 -> {
-                rightWord.correctAnswersCount++
-                saveDictionary()
-                "Верно!"
-            }
-            else -> "Ответ неверный. Правильный перевод - \"${rightWord.translate}\""
-        }
-    }
 
     private fun loadDictionary(): List<Word> {
         val wordsFile = File(FILE_NAME)

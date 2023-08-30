@@ -11,16 +11,47 @@ fun startMenu(trainer: LearnWordsTrainer) {
     while (true) {
         println("\nМеню: 1 – Учить слова, 2 – Статистика, 0 – Выход")
         when (readln().toIntOrNull()) {
-            1 -> trainer.startLearningWords()
-            2 -> trainer.printStatistics()
+            1 -> startLearningWords(trainer)
+            2 -> printStatistics(trainer)
             0 -> break
             else -> println("Ввод данных некорректный!")
         }
     }
 }
 
-data class Word(
-    val original: String,
-    val translate: String,
-    var correctAnswersCount: Int = 0
-)
+fun printStatistics(trainer: LearnWordsTrainer) =
+    with(trainer.getStatistics()) {
+        println("Выучено $numOfLearnedWords из $numOfAllWords слов | $learnedPercent%")
+    }
+
+fun startLearningWords(trainer: LearnWordsTrainer) {
+    while (true) {
+        val question = trainer.getQuestion()
+
+        if (question == null) {
+            println("Вы выучили все слова")
+            break
+        } else {
+            printQuestion(question)
+
+            val checkAnswerResult = getCheckAnswerResult(trainer, question)
+            if (checkAnswerResult == null) break else println(checkAnswerResult)
+        }
+    }
+}
+
+fun printQuestion(question: Question) {
+    println("\nСлово ${question.rightAnswer.original} переводится как:")
+    question.questionWords.forEachIndexed { index, word -> println("${index + 1} - ${word.translate}") }
+    println("0 - Меню")
+}
+
+fun getCheckAnswerResult(trainer: LearnWordsTrainer, question: Question): String? {
+    println("\nВаш вариант ответа:")
+    val userAnswer = readln()
+    return when {
+        userAnswer == "0" -> null
+        trainer.checkAnswer(question, userAnswer) -> "Верно"
+        else -> "Ответ неверный. Правильный перевод - \"${question.rightAnswer.translate}\""
+    }
+}
