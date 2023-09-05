@@ -11,10 +11,10 @@ research|исследование|2
 collection|коллекция|1
 oil|масло|1
 castle|замок|3
-evening|вечер|0
+evening|вечер|1
 wave|волна|0
-physical chemistry|физическая химия|2
-asparagus|спаржа|2
+physical chemistry|физическая химия|3
+asparagus|спаржа|3
 argue|спорить|2
 cherry|вишня|0
-curve|кривая|2
+curve|кривая|3

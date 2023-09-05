@@ -24,6 +24,8 @@ class LearnWordsTrainer {
         throw IllegalArgumentException("Некорректный файл")
     }
 
+    private lateinit var question: Question
+
     fun getStatistics(): Statistics {
         val numOfAllWords = dictionary.size
         val numOfLearnedWords = dictionary.filter { it.correctAnswersCount >= LEARNING_THRESHOLD }.size
@@ -42,10 +44,12 @@ class LearnWordsTrainer {
             if (unlearnedWords.size < NUM_OF_ANSWER_OPTIONS) unlearnedWords.random()
             else questionWords.random()
 
-        return Question(questionWords, rightWord)
+        question = Question(questionWords, rightWord)
+
+        return question
     }
 
-    fun checkAnswer(question: Question, userAnswer: String): Boolean {
+    fun checkAnswer(userAnswer: String): Boolean {
         with(question) {
             if (userAnswer.toIntOrNull() == questionWords.indexOf(rightAnswer) + 1) {
                 rightAnswer.correctAnswersCount++

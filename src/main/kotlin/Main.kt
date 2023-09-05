@@ -51,7 +51,7 @@ fun getCheckAnswerResult(trainer: LearnWordsTrainer, question: Question): String
     val userAnswer = readln()
     return when {
         userAnswer == "0" -> null
-        trainer.checkAnswer(question, userAnswer) -> "Верно"
+        trainer.checkAnswer(userAnswer) -> "Верно"
         else -> "Ответ неверный. Правильный перевод - \"${question.rightAnswer.translate}\""
     }
 }
