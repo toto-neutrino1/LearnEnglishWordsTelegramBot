@@ -19,10 +19,7 @@ fun startMenu(trainer: LearnWordsTrainer) {
     }
 }
 
-fun printStatistics(trainer: LearnWordsTrainer) =
-    with(trainer.getStatistics()) {
-        println("Выучено $numOfLearnedWords из $numOfAllWords слов | $learnedPercent%")
-    }
+fun printStatistics(trainer: LearnWordsTrainer) = println(trainer.getStatisticsInString())
 
 fun startLearningWords(trainer: LearnWordsTrainer) {
     while (true) {
