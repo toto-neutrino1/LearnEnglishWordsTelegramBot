@@ -54,10 +54,6 @@ fun main(args: Array<String>) {
 
 fun getValueFromJson(regex: Regex, updates: String): String? = regex.find(updates)?.groups?.get(1)?.value
 
-fun LearnWordsTrainer.getStatisticsInString() = with(getStatistics()) {
-    "Выучено $numOfLearnedWords из $numOfAllWords слов | $learnedPercent%"
-}
-
 fun TelegramBotService.processUserAnswerAndSendNewQuestionOrMenu(
     trainer: LearnWordsTrainer,
     chatId: Long,

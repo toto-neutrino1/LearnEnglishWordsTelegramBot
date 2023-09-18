@@ -34,6 +34,10 @@ class LearnWordsTrainer {
         return Statistics(numOfAllWords, numOfLearnedWords, learnedPercent)
     }
 
+    fun getStatisticsInString() = with(getStatistics()) {
+        "Выучено $numOfLearnedWords из $numOfAllWords слов | $learnedPercent%"
+    }
+
     fun getQuestion(): Question? {
         val unlearnedWords = getUnlearnedWords()
 

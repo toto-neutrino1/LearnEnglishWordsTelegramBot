@@ -77,7 +77,7 @@ class TelegramBotService(
                    "callback_data": "$CALLBACK_DATA_ANSWER_PREFIX${index + 1}"
                }
             """.trimIndent()
-        }.joinToString(separator = ",\n")
+        }.joinToString(separator = "],\n[")
 
         val inlineKeyboard = """
             "inline_keyboard": [
