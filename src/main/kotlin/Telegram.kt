@@ -43,7 +43,7 @@ fun main(args: Array<String>) {
 
             dataText == LEARN_WORDS_BUTTON -> question = telegramBot.checkNextQuestionAndSend(trainer, chatId)
 
-            dataText != null && question != null && dataText.startsWith(CALLBACK_DATA_ANSWER_PREFIX) ->
+            dataText != null && dataText.startsWith(CALLBACK_DATA_ANSWER_PREFIX) ->
                 question =
                     telegramBot.processUserAnswerAndSendNewQuestionOrMenu(trainer, chatId, dataText, question)
 
@@ -62,13 +62,14 @@ fun TelegramBotService.processUserAnswerAndSendNewQuestionOrMenu(
     trainer: LearnWordsTrainer,
     chatId: Long,
     userData: String,
-    lastQuestion: Question,
+    lastQuestion: Question?,
 ): Question? {
     val userAnswerIndex = userData.substringAfter(CALLBACK_DATA_ANSWER_PREFIX)
     if (userAnswerIndex == "0") {
         sendMenu(chatId)
         return null
     }
+    else if (lastQuestion == null) return null
 
     sendCheckingAnswerResult(trainer, lastQuestion, chatId, userAnswerIndex)
     return checkNextQuestionAndSend(trainer, chatId)
