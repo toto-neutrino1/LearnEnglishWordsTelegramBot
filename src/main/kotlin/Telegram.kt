@@ -10,6 +10,7 @@ const val LEARN_WORDS_BUTTON = "learning_words_clicked"
 const val STATISTICS_BUTTON = "statistics_clicked"
 const val RESET_PROGRESS_BUTTON = "reset_clicked"
 const val CALLBACK_DATA_ANSWER_PREFIX = "answer_"
+const val FAILED_GET_UPDATES_CALL_PREFIX = "Failed getUpdates call"
 
 @Serializable
 data class Response(val result: List<Update>)
@@ -53,6 +54,7 @@ fun main(args: Array<String>) {
         Thread.sleep(2000)
         val updatesInOneString = telegramBot.getUpdates(updateId)
         println(updatesInOneString)
+        if (updatesInOneString.startsWith(FAILED_GET_UPDATES_CALL_PREFIX)) continue
 
         val response = json.decodeFromString<Response>(updatesInOneString)
         if (response.result.isEmpty()) continue

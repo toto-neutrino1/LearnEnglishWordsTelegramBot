@@ -42,7 +42,15 @@ class TelegramBotService(
 
     fun getUpdates(updateId: Long): String {
         val urlGetUpdates = "$getUpdatesURLPrefix?offset=$updateId"
-        return getRequestResult(urlGetUpdates)
+        val requestUpdateResult = kotlin.runCatching {
+            getRequestResult(urlGetUpdates)
+        }
+
+        requestUpdateResult.onFailure {
+            return "$FAILED_GET_UPDATES_CALL_PREFIX: $it"
+        }
+
+        return requestUpdateResult.getOrDefault("DEFAULT_STRING")
     }
 
     fun sendMessage(chatId: Long, sendText: String): String {
