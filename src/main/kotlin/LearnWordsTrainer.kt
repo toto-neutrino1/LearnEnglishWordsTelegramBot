@@ -17,7 +17,11 @@ data class Question(
     val rightAnswer: Word
 )
 
-class LearnWordsTrainer {
+// https://studynow.ru/dicta/allwords - english words were parsed from here
+
+class LearnWordsTrainer(
+    private val fileName: String = DEFAULT_FILE_NAME
+) {
     private val dictionary = try {
         loadDictionary()
     } catch (e: Exception) {
@@ -64,6 +68,11 @@ class LearnWordsTrainer {
         return false
     }
 
+    fun resetProgress() {
+        dictionary.forEach { it.correctAnswersCount = 0 }
+        saveDictionary()
+    }
+
     private fun getUnlearnedWords() = dictionary.filter { it.correctAnswersCount < LEARNING_THRESHOLD }
 
     private fun getRandomQuestionWords(unlearnedWords: List<Word>): List<Word> {
@@ -76,7 +85,10 @@ class LearnWordsTrainer {
         }
 
     private fun loadDictionary(): List<Word> {
-        val wordsFile = File(FILE_NAME)
+        val wordsFile = File(fileName)
+        if (!wordsFile.exists()) {
+            File(DEFAULT_FILE_NAME).copyTo(wordsFile)
+        }
 
         val fileLines = wordsFile.readLines()
         val dictionary: List<Word> = List(fileLines.size) { indexOfFileLine ->
@@ -91,7 +103,7 @@ class LearnWordsTrainer {
     }
 
     private fun saveDictionary() {
-        val file = File(FILE_NAME)
+        val file = File(fileName)
         val newFileContent = dictionary.map { "${it.original}|${it.translate}|${it.correctAnswersCount}" }
         file.writeText(newFileContent.joinToString(separator = "\n"))
     }

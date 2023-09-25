@@ -1,6 +1,6 @@
 const val NUM_OF_ANSWER_OPTIONS = 4
 const val LEARNING_THRESHOLD = 3
-const val FILE_NAME = "words.txt"
+const val DEFAULT_FILE_NAME = "words.txt"
 
 fun main() {
     val trainer = LearnWordsTrainer()
