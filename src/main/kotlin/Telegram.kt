@@ -2,6 +2,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
+const val MENU_INDEX = "0"
 const val MAIN_MENU = "Основное меню"
 const val LEARN_WORDS = "Изучать слова"
 const val STATISTICS = "Статистика"
@@ -40,6 +41,11 @@ data class CallbackQuery(
 @Serializable
 data class Chat(val id: Long)
 
+data class UserState(
+    val trainer: LearnWordsTrainer,
+    var lastQuestion: Question? = null
+)
+
 fun main(args: Array<String>) {
     val botToken = args[0]
     val telegramBot = TelegramBotService(botToken)
@@ -47,8 +53,7 @@ fun main(args: Array<String>) {
     var updateId = 0L
 
     val json = Json { ignoreUnknownKeys = true }
-    val trainers = HashMap<Long, LearnWordsTrainer>()
-    val lastQuestions = HashMap<Long, Question?>()
+    val userStates = HashMap<Long, UserState>()
 
     while(true) {
         Thread.sleep(2000)
@@ -61,7 +66,7 @@ fun main(args: Array<String>) {
 
         val sortedUpdates = response.result.sortedBy { it.updateId }
         sortedUpdates.forEach {
-            telegramBot.handleUpdate(json, it, trainers, lastQuestions)
+            telegramBot.handleUpdate(json, it, userStates)
         }
 
         updateId = sortedUpdates.last().updateId + 1
@@ -69,14 +74,13 @@ fun main(args: Array<String>) {
 }
 
 fun TelegramBotService.handleUpdate(
-    json: Json, update: Update, trainers: HashMap<Long, LearnWordsTrainer>, lastQuestions: HashMap<Long, Question?>
+    json: Json, update: Update, userStates: HashMap<Long, UserState>
 )
 {
     val chatId = update.message?.chat?.id ?: update.callbackQuery?.message?.chat?.id ?: -1
     val userText = update.message?.text?.lowercase()
     val dataText = update.callbackQuery?.data
-    val trainer = trainers.getOrPut(chatId) { LearnWordsTrainer("$chatId.txt") }
-    if (!lastQuestions.containsKey(chatId)) lastQuestions[chatId] = null
+    val userState = userStates.getOrPut(chatId) { UserState(LearnWordsTrainer(fileName = "$chatId.txt")) }
 
     when {
         userText == "/start" || userText == "/menu" -> sendMenu(json, chatId)
@@ -84,18 +88,22 @@ fun TelegramBotService.handleUpdate(
         userText == "hello" || userText == "hi" ->
             sendMessage(chatId, "Hello! \nSend /start or /menu to switch to main menu")
 
-        dataText == STATISTICS_BUTTON -> sendMessage(chatId, trainer.getStatisticsInString())
+        dataText == STATISTICS_BUTTON -> {
+            sendMessage(chatId, userState.trainer.getStatisticsInString())
+            sendMenu(json, chatId)
+        }
 
-        dataText == LEARN_WORDS_BUTTON -> checkNextQuestionAndSend(json, trainer, chatId, lastQuestions)
+        dataText == LEARN_WORDS_BUTTON -> checkNextQuestionAndSend(json, userState, chatId)
 
         dataText == RESET_PROGRESS_BUTTON -> {
-            trainer.resetProgress()
-            lastQuestions[chatId] = null
+            userState.trainer.resetProgress()
+            userState.lastQuestion = null
             sendMessage(chatId, "Прогресс сброшен")
+            sendMenu(json, chatId)
         }
 
         dataText != null && dataText.startsWith(CALLBACK_DATA_ANSWER_PREFIX) ->
-            processUserAnswerAndSendNewQuestionOrMenu(json, trainer, lastQuestions, chatId, dataText)
+            processUserAnswerAndSendNewQuestionOrMenu(json, userState, chatId, dataText)
 
         else -> sendMessage(chatId, "I don't understand you")
     }
@@ -103,37 +111,40 @@ fun TelegramBotService.handleUpdate(
 
 fun TelegramBotService.processUserAnswerAndSendNewQuestionOrMenu(
     json: Json,
-    trainer: LearnWordsTrainer,
-    lastQuestions: HashMap<Long, Question?>,
+    userState: UserState,
     chatId: Long,
     userData: String,
 ) {
     val userAnswerIndex = userData.substringAfter(CALLBACK_DATA_ANSWER_PREFIX)
-    val lastQuestion = lastQuestions[chatId]
-    if (userAnswerIndex == "0") sendMenu(json, chatId)
-    else if (lastQuestion != null) {
-        sendCheckingAnswerResult(trainer, lastQuestion, chatId, userAnswerIndex)
-        checkNextQuestionAndSend(json, trainer, chatId, lastQuestions)
+    if (userAnswerIndex == MENU_INDEX) sendMenu(json, chatId)
+    else if (userState.lastQuestion != null) {
+        sendCheckingAnswerResult(userState, chatId, userAnswerIndex)
+        checkNextQuestionAndSend(json, userState, chatId)
     }
 }
 
 fun TelegramBotService.checkNextQuestionAndSend(
-    json: Json, trainer: LearnWordsTrainer, chatId: Long, lastQuestions: HashMap<Long, Question?>
+    json: Json, userState: UserState, chatId: Long
 ) {
-    val question = trainer.getQuestion()
-    lastQuestions[chatId] = question
-    if (question == null) sendMessage(chatId, "Вы выучили все слова")
+    val question = userState.trainer.getQuestion()
+    userState.lastQuestion = question
+    if (question == null) {
+        sendMessage(chatId, "Вы выучили все слова")
+        sendMenu(json, chatId)
+    }
     else sendQuestion(json, chatId, question)
 }
 
 fun TelegramBotService.sendCheckingAnswerResult(
-    trainer: LearnWordsTrainer,
-    question: Question,
+    userState: UserState,
     chatId: Long,
     userAnswerIndex: String
 ) {
-    if (trainer.checkAnswer(userAnswerIndex)) sendMessage(chatId, "Правильно")
-    else sendMessage(
-        chatId, "Неправильно: \n${question.rightAnswer.original} - ${question.rightAnswer.translate}"
-    )
+    val lastQuestion = userState.lastQuestion
+    if (userState.trainer.checkAnswer(userAnswerIndex)) sendMessage(chatId, "Правильно")
+    else if (lastQuestion != null) {
+        with(lastQuestion) {
+            sendMessage(chatId, "Неправильно: \n${rightAnswer.original} - ${rightAnswer.translate}")
+        }
+    }
 }

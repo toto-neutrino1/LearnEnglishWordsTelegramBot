@@ -9,6 +9,8 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.nio.charset.StandardCharsets
 
+const val HOST = "https://api.telegram.org"
+
 @Serializable
 data class SendMessageRequest(
     @SerialName("chat_id")
@@ -37,8 +39,8 @@ class TelegramBotService(
     private val botToken: String
 ) {
     private val client: HttpClient = HttpClient.newBuilder().build()
-    private val sendMessageURLPrefix = "https://api.telegram.org/bot$botToken/sendMessage"
-    private val getUpdatesURLPrefix = "https://api.telegram.org/bot$botToken/getUpdates"
+    private val sendMessageURLPrefix = "$HOST/bot$botToken/sendMessage"
+    private val getUpdatesURLPrefix = "$HOST/bot$botToken/getUpdates"
 
     fun getUpdates(updateId: Long): String {
         val urlGetUpdates = "$getUpdatesURLPrefix?offset=$updateId"

@@ -1,5 +1,9 @@
 import java.io.File
 
+const val DEFAULT_FILE_NAME = "words.txt"
+const val DEFAULT_NUM_OF_ANSWER_OPTIONS = 4
+const val DEFAULT_LEARNING_THRESHOLD = 3
+
 data class Word(
     val original: String,
     val translate: String,
@@ -20,7 +24,9 @@ data class Question(
 // https://studynow.ru/dicta/allwords - english words were parsed from here
 
 class LearnWordsTrainer(
-    private val fileName: String = DEFAULT_FILE_NAME
+    private val fileName: String = DEFAULT_FILE_NAME,
+    private val numOfAnswerOptions: Int = DEFAULT_NUM_OF_ANSWER_OPTIONS,
+    private val learningThreshold: Int = DEFAULT_LEARNING_THRESHOLD
 ) {
     private val dictionary = try {
         loadDictionary()
@@ -32,7 +38,7 @@ class LearnWordsTrainer(
 
     fun getStatistics(): Statistics {
         val numOfAllWords = dictionary.size
-        val numOfLearnedWords = dictionary.filter { it.correctAnswersCount >= LEARNING_THRESHOLD }.size
+        val numOfLearnedWords = dictionary.filter { it.correctAnswersCount >= learningThreshold }.size
         val learnedPercent = 100 * numOfLearnedWords / numOfAllWords
 
         return Statistics(numOfAllWords, numOfLearnedWords, learnedPercent)
@@ -49,7 +55,7 @@ class LearnWordsTrainer(
 
         val questionWords = getRandomQuestionWords(unlearnedWords)
         val rightWord =
-            if (unlearnedWords.size < NUM_OF_ANSWER_OPTIONS) unlearnedWords.random()
+            if (unlearnedWords.size < numOfAnswerOptions) unlearnedWords.random()
             else questionWords.random()
 
         question = Question(questionWords, rightWord)
@@ -73,14 +79,14 @@ class LearnWordsTrainer(
         saveDictionary()
     }
 
-    private fun getUnlearnedWords() = dictionary.filter { it.correctAnswersCount < LEARNING_THRESHOLD }
+    private fun getUnlearnedWords() = dictionary.filter { it.correctAnswersCount < learningThreshold }
 
     private fun getRandomQuestionWords(unlearnedWords: List<Word>): List<Word> {
-            return if (unlearnedWords.size < NUM_OF_ANSWER_OPTIONS) {
-                val learnedWords = dictionary.filter { it.correctAnswersCount >= LEARNING_THRESHOLD }.shuffled()
-                (unlearnedWords + learnedWords.take(NUM_OF_ANSWER_OPTIONS - unlearnedWords.size)).shuffled()
+            return if (unlearnedWords.size < numOfAnswerOptions) {
+                val learnedWords = dictionary.filter { it.correctAnswersCount >= learningThreshold }.shuffled()
+                (unlearnedWords + learnedWords.take(numOfAnswerOptions - unlearnedWords.size)).shuffled()
             } else {
-                unlearnedWords.shuffled().take(NUM_OF_ANSWER_OPTIONS)
+                unlearnedWords.shuffled().take(numOfAnswerOptions)
             }
         }
 
