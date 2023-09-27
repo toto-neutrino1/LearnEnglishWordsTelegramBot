@@ -1,20 +1,100 @@
 hello|привет|0
 dog|собака|0
 cat|кошка|0
-team|команда|0
-snowball|снегопад|0
 aspect ratio|соотношение сторон|0
 iron|железо|0
 flying|летающий|0
 diffusion|диффузия|0
-research|исследование|0
 collection|коллекция|0
-oil|масло|0
 castle|замок|0
 evening|вечер|0
-wave|волна|0
 physical chemistry|физическая химия|0
 asparagus|спаржа|0
-argue|спорить|0
 cherry|вишня|0
 curve|кривая|0
+literate|грамотность|0
+intern|стажёр|0
+shower|душ|0
+scour|обыскать|0
+scholarship (money)|стипендия|0
+let smb in|впустить|0
+discard|отбросить|0
+prominent|выдающийся|0
+loud|громкий|0
+fragrant|душистый|0
+factory|фабрика|0
+resort|курорт|0
+get about|передвигаться (на чём-то)|0
+perhaps|возможно|0
+shiver|дрожь|0
+devastate|опустошать|0
+drum|барабан|0
+flashlight|фонарик|0
+significant|значительный|0
+sidewalk|тротуар|0
+awake|проснуться|0
+abundant|обильный|0
+repair|ремонт|0
+filth|грязь|0
+early|рано|0
+caress|ласкать|0
+clap|хлопать в ладоши|0
+intrinsic|присущий|0
+peddle|торговать вразнос|0
+lash (eyelash)|ресница|0
+on account of|в связи|0
+feel like|хотеть|0
+fraction|доля|0
+rig|установка|0
+shift|сменить|0
+rebel|восставать|0
+gratitude|благодарность|0
+since|поскольку|0
+thrill|трепет|0
+lot|жребий|0
+noise|шум|0
+take off|снять|0
+jar|банка|0
+shove|резко толкнуть|0
+wield|владеть|0
+mend|чинить|0
+shatter|разрушить|0
+piss|писать|0
+oversight|надзор|0
+amend|исправить|0
+sit around|просто сидеть|0
+flick through|просмотреть|0
+bring around|убедить|0
+litter|мусор (на улице)|0
+gaze|пристально глядеть|0
+blend|смешивать|0
+brim|край сосуда|0
+cruel|жестокий|0
+crave|желать|0
+pour in (into)|хлынуть|0
+implicit|подразумеваемый|0
+flurry|поток|0
+bullet|пуля|0
+reject|отвергать|0
+lurk|таиться|0
+east|восток|0
+redundant|избыточный|0
+stool|табурет|0
+sincere|искренний|0
+candle|свеча|0
+helpful|полезный|0
+purchase|покупка|0
+imperative|обязательный|1
+plaque|бляшка|0
+insult|оскорбление|0
+upset|расстраивать|0
+smear|мазать|0
+hoof|копыто|0
+screw up|завалить|0
+sequence|последовательность|0
+chill|холод|0
+come up with|придумать|0
+guise|облик|0
+beneath|ниже|0
+team|команда|0
+improve|улучшить|0

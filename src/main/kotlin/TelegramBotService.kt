@@ -1,3 +1,7 @@
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.net.URI
 import java.net.URLEncoder
 import java.net.http.HttpClient
@@ -5,16 +9,50 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.nio.charset.StandardCharsets
 
+const val HOST = "https://api.telegram.org"
+
+@Serializable
+data class SendMessageRequest(
+    @SerialName("chat_id")
+    val chatId: Long,
+    @SerialName("text")
+    val text: String,
+    @SerialName("reply_markup")
+    val replyMarkup: ReplyMarkup
+)
+
+@Serializable
+data class ReplyMarkup(
+    @SerialName("inline_keyboard")
+    val inlineKeyboard: List<List<InlineButton>>
+)
+
+@Serializable
+data class InlineButton(
+    @SerialName("text")
+    val text: String,
+    @SerialName("callback_data")
+    val callbackData: String
+)
+
 class TelegramBotService(
     private val botToken: String
 ) {
     private val client: HttpClient = HttpClient.newBuilder().build()
-    private val sendMessageURLPrefix = "https://api.telegram.org/bot$botToken/sendMessage"
-    private val getUpdatesURLPrefix = "https://api.telegram.org/bot$botToken/getUpdates"
+    private val sendMessageURLPrefix = "$HOST/bot$botToken/sendMessage"
+    private val getUpdatesURLPrefix = "$HOST/bot$botToken/getUpdates"
 
-    fun getUpdates(updateId: Int): String {
+    fun getUpdates(updateId: Long): String {
         val urlGetUpdates = "$getUpdatesURLPrefix?offset=$updateId"
-        return getRequestResult(urlGetUpdates)
+        val requestUpdateResult = kotlin.runCatching {
+            getRequestResult(urlGetUpdates)
+        }
+
+        requestUpdateResult.onFailure {
+            return "$FAILED_GET_UPDATES_CALL_PREFIX: $it"
+        }
+
+        return requestUpdateResult.getOrDefault("DEFAULT_STRING")
     }
 
     fun sendMessage(chatId: Long, sendText: String): String {
@@ -24,13 +62,13 @@ class TelegramBotService(
         return getRequestResult(urlSendMessage)
     }
 
-    fun sendMenu(chatId: Long): String {
-        val sendMenuBody = getJSONMenuBody(chatId)
+    fun sendMenu(json: Json, chatId: Long): String {
+        val sendMenuBody = getJSONMenuBody(json, chatId)
         return postRequestResult(sendMenuBody)
     }
 
-    fun sendQuestion(chatId: Long, question: Question): String {
-        val sendQuestionBody = getJSONQuestionBody(chatId, question)
+    fun sendQuestion(json: Json, chatId: Long, question: Question): String {
+        val sendQuestionBody = getJSONQuestionBody(json, chatId, question)
         return postRequestResult(sendQuestionBody)
     }
 
@@ -48,59 +86,60 @@ class TelegramBotService(
         return client.send(request, HttpResponse.BodyHandlers.ofString()).body()
     }
 
-    private fun getJSONMenuBody(chatId: Long) = """
-            {
-                "chat_id": $chatId,
-                "text": "$MAIN_MENU",
-                "reply_markup": {
-                    "inline_keyboard": [
-                        [
-                            {
-                                "text": "$LEARN_WORDS",
-                                "callback_data": "$LEARN_WORDS_BUTTON"
-                            },
-                            {
-                                "text": "$STATISTICS",
-                                "callback_data": "$STATISTICS_BUTTON"
-                            }
-                        ]
-                    ]
-                }
-            }
-        """.trimIndent()
+    private fun getJSONMenuBody(json: Json, chatId: Long): String {
+        val menuBody = SendMessageRequest(
+            chatId = chatId,
+            text = MAIN_MENU,
+            replyMarkup = ReplyMarkup(
+                listOf(
+                    listOf(
+                        InlineButton(
+                            text = LEARN_WORDS,
+                            callbackData = LEARN_WORDS_BUTTON
+                        ),
+                        InlineButton(
+                            text = STATISTICS,
+                            callbackData = STATISTICS_BUTTON
+                        )
+                    ),
+                    listOf(
+                        InlineButton(
+                            text = RESET_PROGRESS,
+                            callbackData = RESET_PROGRESS_BUTTON
+                        )
+                    )
+                )
+            )
+        )
 
-    private fun getJSONQuestionBody(chatId: Long, question: Question): String {
-        val inlineKeyboardAnswersButtons = question.questionWords.mapIndexed { index, word ->
-            """
-               {
-                   "text": "${word.translate}",
-                   "callback_data": "$CALLBACK_DATA_ANSWER_PREFIX${index + 1}"
-               }
-            """.trimIndent()
-        }.joinToString(separator = "],\n[")
+        return json.encodeToString(menuBody)
+    }
 
-        val inlineKeyboard = """
-            "inline_keyboard": [
-                        [
-                            $inlineKeyboardAnswersButtons
-                        ],
-                        [
-                            {
-                                "text": "Вернуться в $MAIN_MENU",
-                                "callback_data": "${CALLBACK_DATA_ANSWER_PREFIX}0"
-                            }
-                        ]
-                    ]
-        """.trimIndent()
+    private fun getJSONQuestionBody(json: Json, chatId: Long, question: Question): String {
+        val questionBody = SendMessageRequest(
+            chatId = chatId,
+            text = "Слово ${question.rightAnswer.original} переводится как:",
+            replyMarkup = ReplyMarkup(
+                    question.questionWords.mapIndexed { index, word ->
+                            listOf(
+                                InlineButton(
+                                    text = word.translate,
+                                    callbackData = "$CALLBACK_DATA_ANSWER_PREFIX${index + 1}"
+                                )
+                            )
+                    }.plus(
+                        listOf(
+                            listOf(
+                                InlineButton(
+                                    text = "Вернуться в $MAIN_MENU",
+                                    callbackData = "${CALLBACK_DATA_ANSWER_PREFIX}0"
+                                )
+                            )
+                        )
+                    )
+            )
+        )
 
-        return """
-            {
-                "chat_id": $chatId,
-                "text": "Слово ${question.rightAnswer.original} переводится как:",
-                "reply_markup": {
-                    $inlineKeyboard
-                }
-            }
-        """.trimIndent()
+        return json.encodeToString(questionBody)
     }
 }
