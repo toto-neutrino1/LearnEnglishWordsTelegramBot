@@ -1,5 +1,5 @@
 fun main() {
-    val trainer = LearnWordsTrainer()
+    val trainer = LearnWordsTrainer(FileUserDictionary())
     startMenu(trainer)
 }
 

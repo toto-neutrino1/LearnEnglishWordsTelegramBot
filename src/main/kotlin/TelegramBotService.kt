@@ -52,13 +52,12 @@ class TelegramBotService(
             return "$FAILED_GET_UPDATES_CALL_PREFIX: $it"
         }
 
-        return requestUpdateResult.getOrDefault("DEFAULT_STRING")
+        return requestUpdateResult.getOrDefault("DEFAULT_UPDATE_STRING")
     }
 
     fun sendMessage(chatId: Long, sendText: String): String {
         val text = URLEncoder.encode(sendText, StandardCharsets.UTF_8)
         val urlSendMessage = "$sendMessageURLPrefix?chat_id=$chatId&text=$text"
-
         return getRequestResult(urlSendMessage)
     }
 
