@@ -1,7 +1,6 @@
 import java.io.File
 import java.sql.Connection
 import java.sql.ResultSet
-import java.sql.Statement
 
 const val URL_DATABASE = "jdbc:sqlite:data.db"
 const val WORDS_TABLE = "words"
@@ -12,18 +11,18 @@ const val FIRST_WORDS_INDEX = 1
 
 class DatabaseService() {
     private var dictionarySize: Int = 0
-    fun getDictionarySize(connection: Connection) =
-        connection.createStatement()
-            .executeQuery(
-                """
-                    select count(id) 
-                    from $WORDS_TABLE
-                """.trimIndent()
-        ).getInt("count(id)")
 
-    fun getNumOfLearnedWords(connection: Connection, chatId: Long, learningThreshold: Int): Int {
-        val statement = connection.createStatement()
-        val rs = statement.executeQuery(
+    fun getDictionarySize(connection: Connection) =
+        connection.prepareStatement(
+            """
+                select count(id) 
+                from $WORDS_TABLE
+            """.trimIndent()
+        ).executeQuery()
+            .getInt("count(id)")
+
+    fun getNumOfLearnedWords(connection: Connection, chatId: Long, learningThreshold: Int) =
+        connection.prepareStatement(
             """
                 select count(word_id) 
                 from $USER_ANSWERS_TABLE 
@@ -34,25 +33,22 @@ class DatabaseService() {
                 )
                 and correct_answer_count >= $learningThreshold
             """.trimIndent()
-        )
-
-        return rs.getInt("count(word_id)")
-    }
+        ).executeQuery()
+            .getInt("count(word_id)")
 
     fun getLearnedWords(connection: Connection, chatId: Long, learningThreshold: Int): List<Word> {
-        var learnedWords = listOf<Word>()
         val numOfLearnedWords = getNumOfLearnedWords(connection, chatId, learningThreshold)
         if (numOfLearnedWords != 0) {
-            val statement = connection.createStatement()
-            val userId = statement.executeQuery(
+            val userId = connection.prepareStatement(
                 """
                     select id 
                     from $USERS_TABLE 
                     where chat_id = $chatId
                 """.trimIndent()
-            ).getInt("id")
+            ).executeQuery()
+                .getInt("id")
 
-            val resultSetLearnedWords = statement.executeQuery(
+            val resultSetLearnedWords = connection.prepareStatement(
                 """
                     select text, translate, $USER_ANSWERS_TABLE.correct_answer_count 
                     from (
@@ -69,29 +65,28 @@ class DatabaseService() {
                         $USER_ANSWERS_TABLE.user_id = $userId and id = $USER_ANSWERS_TABLE.word_id
                     )
                 """.trimIndent()
-            )
+            ).executeQuery()
 
-            learnedWords = getWordsFromTable(resultSetLearnedWords)
-
+            return getWordsFromTable(resultSetLearnedWords)
         }
-        return learnedWords
+
+        return listOf()
     }
 
     fun getUnlearnedWords(connection: Connection, chatId: Long, learningThreshold: Int): List<Word> {
-        var unLearnedWords = listOf<Word>()
         val numOfUnlearnedWords =
             getDictionarySize(connection) - getNumOfLearnedWords(connection, chatId, learningThreshold)
         if (numOfUnlearnedWords != 0) {
-            val statement = connection.createStatement()
-            val userId = statement.executeQuery(
+            val userId = connection.prepareStatement(
                 """
                     select id 
                     from $USERS_TABLE 
                     where chat_id = $chatId
                 """.trimIndent()
-            ).getInt("id")
+            ).executeQuery()
+                .getInt("id")
 
-            val resultSetUnlearnedWords = statement.executeQuery(
+            val resultSetUnlearnedWords = connection.prepareStatement(
                 """
                     select text, translate, $USER_ANSWERS_TABLE.correct_answer_count
                     from (
@@ -108,12 +103,12 @@ class DatabaseService() {
                         $USER_ANSWERS_TABLE.user_id = $userId and id = $USER_ANSWERS_TABLE.word_id
                     )
                 """.trimIndent()
-            )
+            ).executeQuery()
 
-            unLearnedWords = getWordsFromTable(resultSetUnlearnedWords)
+            return getWordsFromTable(resultSetUnlearnedWords)
         }
 
-        return unLearnedWords
+        return listOf()
     }
 
     private fun getWordsFromTable(rs: ResultSet): List<Word> {
@@ -137,54 +132,56 @@ class DatabaseService() {
     fun setCorrectAnswersCount(
         connection: Connection, chatId: Long, word: Word, correctAnswersCount: Int, date: String
     ) {
-        val statement = connection.createStatement()
-        val userId = statement.executeQuery(
+        val userId = connection.prepareStatement(
             """
                 select id 
                 from $USERS_TABLE 
                 where chat_id = $chatId
             """.trimIndent()
-        ).getInt("id")
+        ).executeQuery()
+            .getInt("id")
 
-        val wordIdStatement = connection.prepareStatement(
+        val wordId = connection.prepareStatement(
             """
                 select id 
                 from $WORDS_TABLE
                 where text = ?
-            """.trimIndent())
-        wordIdStatement.setString(1, word.original)
-        val wordId = wordIdStatement.executeQuery().getInt("id")
+            """.trimIndent()
+        ).apply {
+            setString(1, word.original)
+        }.executeQuery()
+            .getInt("id")
 
-        val wordIdFromAnswersResultSet = statement.executeQuery(
+        val wordIdFromAnswersResultSet = connection.prepareStatement(
             """
                 select word_id 
                 from $USER_ANSWERS_TABLE 
                 where word_id = $wordId 
                     and user_id = $userId
             """.trimIndent()
-        )
+        ).executeQuery()
 
         if (wordIdFromAnswersResultSet.getInt("word_id") == 0) {
-            statement.executeUpdate(
+            connection.prepareStatement(
                 """
                     insert into $USER_ANSWERS_TABLE 
                     values($userId, $wordId, $correctAnswersCount, '$date')
                 """.trimIndent()
-            )
+            ).executeUpdate()
         } else {
-            statement.executeUpdate(
+            connection.prepareStatement(
                 """
                     update $USER_ANSWERS_TABLE
                     set correct_answer_count = $correctAnswersCount, updated_at = '$date' 
                     where user_id = $userId 
                         and word_id = $wordId
                 """.trimIndent()
-            )
+            ).executeUpdate()
         }
     }
 
     fun resetAllUserAnswers(connection: Connection, chatId: Long, date: String) {
-        connection.createStatement().executeUpdate(
+        connection.prepareStatement(
             """
                 update $USER_ANSWERS_TABLE 
                 set correct_answer_count = 0, updated_at = '$date' 
@@ -194,83 +191,85 @@ class DatabaseService() {
                     where chat_id = $chatId
                 )
             """.trimIndent()
-        )
+        ).executeUpdate()
     }
 
-
     fun addNewUser(connection: Connection, chatId: Long, date: String, username: String? = null) {
-        val statement = connection.createStatement()
-        if (isNewUser(statement, chatId)) {
-            val lastId = getLastPrimaryKey(statement, USERS_TABLE).getInt(MAX)
+        if (isNewUser(connection, chatId)) {
+            val lastId = getLastPrimaryKey(connection, USERS_TABLE).getInt(MAX)
             if (username != null) {
-                val injectionStatement = connection.prepareStatement(
+                connection.prepareStatement(
                     """
                         insert into $USERS_TABLE 
                         values(?, ?, ?, ?)
-                    """.trimIndent())
-                injectionStatement.setInt(1, lastId + 1)
-                injectionStatement.setString(2, username)
-                injectionStatement.setString(3, date)
-                injectionStatement.setLong(4, chatId)
-                injectionStatement.executeUpdate()
+                    """.trimIndent()
+                ).apply {
+                    setInt(1, lastId + 1)
+                    setString(2, username)
+                    setString(3, date)
+                    setLong(4, chatId)
+                    executeUpdate()
+                }
             } else {
-                statement.executeUpdate(
+                connection.prepareStatement(
                     """
                         insert into $USERS_TABLE(id, created_at, chat_id) 
                         values(${lastId + 1}, '$date', $chatId)
                     """.trimIndent()
-                )
+                ).executeUpdate()
             }
         }
     }
 
     fun updateDictionary(connection: Connection, wordsFile: File) {
-        val statement = connection.createStatement()
         val fileLines = wordsFile.readLines()
-        val lastId = getLastPrimaryKey(statement, WORDS_TABLE).getInt(MAX)
+        val lastId = getLastPrimaryKey(connection, WORDS_TABLE).getInt(MAX)
         fileLines.forEachIndexed { indexOfLine, fileLine ->
             val lineElements = fileLine.split("|")
-            val injectionStatement = connection.prepareStatement(
+            connection.prepareStatement(
                 """
                     insert into $WORDS_TABLE 
                     values(?, ?, ?)
                     on conflict do nothing
-                """.trimIndent())
-            injectionStatement.setInt(1, indexOfLine + FIRST_WORDS_INDEX + lastId)
-            injectionStatement.setString(2, lineElements[0])
-            injectionStatement.setString(3, lineElements[1])
-            injectionStatement.executeUpdate()
+                """.trimIndent()
+            ).apply {
+                setInt(1, indexOfLine + FIRST_WORDS_INDEX + lastId)
+                setString(2, lineElements[0])
+                setString(3, lineElements[1])
+                executeUpdate()
+            }
         }
 
-        dictionarySize = statement.executeQuery(
+        dictionarySize = connection.prepareStatement(
             """
                 select count(id) 
                 from $WORDS_TABLE
             """.trimIndent()
-        ).getInt("count(id)")
+        ).executeQuery()
+            .getInt("count(id)")
     }
 
-    private fun getLastPrimaryKey(statement: Statement, tableName: String): ResultSet =
-        statement.executeQuery(
+    private fun getLastPrimaryKey(connection: Connection, tableName: String): ResultSet =
+        connection.prepareStatement(
             """
                 select max(id) as $MAX 
                 from $tableName
             """.trimIndent()
-        )
+        ).executeQuery()
 
-    private fun isNewUser(statement: Statement, chatId: Long): Boolean {
-        return statement.executeQuery(
+    private fun isNewUser(connection: Connection, chatId: Long): Boolean {
+        return connection.prepareStatement(
             """
                 select chat_id 
                 from $USERS_TABLE 
                 where chat_id = $chatId
             """.trimIndent()
-        ).getLong("chat_id") != chatId
+        ).executeQuery()
+            .getLong("chat_id") != chatId
     }
 
     fun createDatabaseTables(connection: Connection) {
-        val statement = connection.createStatement()
-        statement.executeUpdate(
+        connection.prepareStatement(
             """
                 create table 
                 if not exists "$WORDS_TABLE" (
@@ -279,9 +278,9 @@ class DatabaseService() {
                     "translate" varchar
                 );
             """.trimIndent()
-        )
+        ).executeUpdate()
 
-        statement.executeUpdate(
+        connection.prepareStatement(
             """
                 create table 
                 if not exists "$USERS_TABLE" (
@@ -291,9 +290,9 @@ class DatabaseService() {
                     "chat_id" integer
                 );
             """.trimIndent()
-        )
+        ).executeUpdate()
 
-        statement.executeUpdate(
+        connection.prepareStatement(
             """
                 create table 
                 if not exists "$USER_ANSWERS_TABLE" (
@@ -303,6 +302,6 @@ class DatabaseService() {
                     "updated_at" timestamp
                 );
             """.trimIndent()
-        )
+        ).executeUpdate()
     }
 }
