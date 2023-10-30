@@ -1,8 +1,4 @@
-import java.io.File
-
-const val DEFAULT_FILE_NAME = "words.txt"
 const val DEFAULT_NUM_OF_ANSWER_OPTIONS = 4
-const val DEFAULT_LEARNING_THRESHOLD = 3
 
 data class Word(
     val original: String,
@@ -24,21 +20,20 @@ data class Question(
 // https://studynow.ru/dicta/allwords - english words were parsed from here
 
 class LearnWordsTrainer(
-    private val fileName: String = DEFAULT_FILE_NAME,
+    private val dictionary: IUserDictionary,
     private val numOfAnswerOptions: Int = DEFAULT_NUM_OF_ANSWER_OPTIONS,
-    private val learningThreshold: Int = DEFAULT_LEARNING_THRESHOLD
 ) {
-    private val dictionary = try {
-        loadDictionary()
-    } catch (e: Exception) {
-        throw IllegalArgumentException("Некорректный файл")
-    }
 
     private lateinit var question: Question
+    private var lastRecordDate: String = ""
+
+    fun updateDate(newDate: String) {
+        lastRecordDate = newDate
+    }
 
     fun getStatistics(): Statistics {
-        val numOfAllWords = dictionary.size
-        val numOfLearnedWords = dictionary.filter { it.correctAnswersCount >= learningThreshold }.size
+        val numOfAllWords = dictionary.getDictionarySize()
+        val numOfLearnedWords = dictionary.getNumOfLearnedWords()
         val learnedPercent = 100 * numOfLearnedWords / numOfAllWords
 
         return Statistics(numOfAllWords, numOfLearnedWords, learnedPercent)
@@ -49,7 +44,7 @@ class LearnWordsTrainer(
     }
 
     fun getQuestion(): Question? {
-        val unlearnedWords = getUnlearnedWords()
+        val unlearnedWords = dictionary.getUnlearnedWords()
 
         if (unlearnedWords.isEmpty()) return null
 
@@ -66,51 +61,23 @@ class LearnWordsTrainer(
     fun checkAnswer(userAnswer: String): Boolean {
         with(question) {
             if (userAnswer.toIntOrNull() == questionWords.indexOf(rightAnswer) + 1) {
-                rightAnswer.correctAnswersCount++
-                saveDictionary()
+                dictionary.setCorrectAnswersCount(
+                    rightAnswer, rightAnswer.correctAnswersCount + 1, lastRecordDate
+                )
                 return true
             }
         }
         return false
     }
 
-    fun resetProgress() {
-        dictionary.forEach { it.correctAnswersCount = 0 }
-        saveDictionary()
-    }
-
-    private fun getUnlearnedWords() = dictionary.filter { it.correctAnswersCount < learningThreshold }
+    fun resetProgress() = dictionary.resetProgress(lastRecordDate)
 
     private fun getRandomQuestionWords(unlearnedWords: List<Word>): List<Word> {
             return if (unlearnedWords.size < numOfAnswerOptions) {
-                val learnedWords = dictionary.filter { it.correctAnswersCount >= learningThreshold }.shuffled()
+                val learnedWords = dictionary.getLearnedWords().shuffled()
                 (unlearnedWords + learnedWords.take(numOfAnswerOptions - unlearnedWords.size)).shuffled()
             } else {
                 unlearnedWords.shuffled().take(numOfAnswerOptions)
             }
-        }
-
-    private fun loadDictionary(): List<Word> {
-        val wordsFile = File(fileName)
-        if (!wordsFile.exists()) {
-            File(DEFAULT_FILE_NAME).copyTo(wordsFile)
-        }
-
-        val fileLines = wordsFile.readLines()
-        val dictionary: List<Word> = List(fileLines.size) { indexOfFileLine ->
-            val stringElem = fileLines[indexOfFileLine].split("|")
-            Word(
-                original = stringElem[0],
-                translate =  stringElem[1],
-                correctAnswersCount = stringElem.getOrNull(2)?.toIntOrNull() ?: 0
-            )
-        }
-        return dictionary
-    }
-
-    private fun saveDictionary() {
-        val file = File(fileName)
-        val newFileContent = dictionary.map { "${it.original}|${it.translate}|${it.correctAnswersCount}" }
-        file.writeText(newFileContent.joinToString(separator = "\n"))
     }
 }
