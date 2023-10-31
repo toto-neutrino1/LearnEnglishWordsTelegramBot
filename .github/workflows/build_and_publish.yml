@@ -34,13 +34,13 @@ jobs:
           source: bot.jar
           target: /root
 
-      - name: Deploy words.txt to VPS
+      - name: Deploy data.db to VPS
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
-          source: words.txt
+          source: data.db
           target: /root
 
       - name: Restart Remote Service
